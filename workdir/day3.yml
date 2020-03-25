@@ -1,0 +1,63 @@
+- hosts: nodes 
+  vars:
+    student_first_name: Viachaslau
+    student_last_name: Nikifarau
+ 
+  roles: 
+  - base
+  - mysql_db
+
+  - role: user
+    vars:
+      username: testuser
+      groupname: testgroup
+      permission: ALL=(ALL:ALL) NOPASSWD:ALL 
+
+  - role: msg-service
+    vars:
+      app_user: msg-test-u
+      app_group: msg-test-g
+      app_home: /opt/msg-service/
+      app_port: 8080
+      app_message: SweetDevOps is here!
+
+  - role: mysql_db_user
+    vars:
+      mysql_user: Vaultuser
+      mysql_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          64653530303630326266376631626338353937646461333133366338663165363234346332623532
+          3038346533616137386366643734323661336331373865380a326332396630303437626638386531
+          38383535366135303665623032396436613537633136623332363333306230343131636266616665
+          3837303037633830370a656636316261643335393035336366323332626636343366616333643138
+          6466
+      mysql_db_user_database: Vault_db
+
+  - role: mysql-check
+    vars:
+      mysql_check_port: 8081
+
+  tasks:
+    - name: Test if MySQL and msg-server is running
+      command: systemctl status "{{ item }}"
+      register: test
+      changed_when: false
+      failed_when: not 'active (running)' in test.stdout
+      with_items:
+        - msg-service
+        - mysql
+      become: yes
+
+    - name: Check if msg-server is on port "{{ app_port }}"
+      command: 'netstat -tunlp | grep :"{{ app_port }}"'
+      register: test
+      changed_when: false
+      failed_when: not 'msg-server' in test.stdout
+      become: yes
+
+    - name: Check if MySQL is on port 3306
+      command: 'netstat -tunlp | grep ":3306  "'
+      register: test
+      changed_when: false
+      failed_when: not 'mysqld' in test.stdout
+      become: yes
