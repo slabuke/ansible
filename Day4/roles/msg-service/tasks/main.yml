@@ -1,0 +1,55 @@
+---
+# tasks file for msg-service
+
+  - name: Create a directory if it doesn't exist
+    file:
+      path: "{{ app_home }}/{{ item }}/"
+      state: directory
+      owner: "{{ app_user }}"
+      group: "{{ app_group }}"
+    become: yes
+    with_items: 
+    - bin
+    - conf
+ 
+  - name: Download (get_url) executable file
+    get_url:
+      url: https://playpit-labs-assets.s3-eu-west-1.amazonaws.com/msg-service/msg-server
+      dest: "{{ app_home }}/bin/msg-server"
+      owner: "{{ app_user }}"
+      group: "{{ app_group }}"
+      mode: 0755
+    become: yes
+    notify:
+      - restart msg-service
+
+  - name: Copying conf file with owner and permissions
+    template:
+      src: msg-service.conf
+      dest: "{{ app_home }}/conf/msg-service.conf"
+      owner: "{{ app_user }}"
+      group: "{{ app_group }}"
+      mode: 0644
+    become: yes
+    notify:
+      - restart msg-service
+
+  - name: Copying systemd file with owner and permissions
+    template:
+      src: msg-service.service
+      dest: /lib/systemd/system/msg-service.service
+      mode: 0644
+    become: yes
+    notify:
+      - restart msg-service
+
+  - name: Make sure a service is running, enabled and not masked
+    systemd:
+      name: msg-service.service
+      state: started
+      enabled: yes
+      masked: no    
+    become: yes
+    notify:
+      - msg-service provision fact
+

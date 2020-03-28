@@ -1,0 +1,33 @@
+---
+# handlers file for mysql_db
+
+      
+- name: restart mysql
+  systemd: 
+    name: mysql
+    enabled: yes
+    state: restarted
+  become: yes
+  
+- name: mysql_db_user_fact
+  copy: 
+    content: >
+         {    
+               "exist": true,
+               "user": "{{ mysql_db_user_name }}",
+               "privs": "{{ mysql_db_user_pivileges }}"
+               
+         }           
+    dest: "/etc/ansible/facts.d/mysql_db_user.fact"
+  become: yes
+  
+- name: mysql_db_user_database_fact
+  copy: 
+    content: >
+         {    
+               "exist": true,
+               "name": "{{ mysql_db_user_database }}",
+               "user": "{{ mysql_db_user_name }}"
+         }          
+    dest: "/etc/ansible/facts.d/mysql_db_user_database.fact"
+  become: yes

@@ -1,0 +1,24 @@
+---
+- name: Add user to mysql_db 
+  mysql_user:
+    name: "{{ mysql_db_user_name | mandatory }}"
+    password: "{{ mysql_db_user_password | mandatory }}"
+    priv: "{{ mysql_db_user_pivileges | default('*.*:ALL') }}"
+    host: "%"
+    state: present
+  become: yes
+  notify:
+    - restart mysql
+    - mysql_db_user_fact
+  when: ansible_local.mysql_db_user is undefined or not ansible_local.mysql_db_user.exist 
+  
+- name: Create a database with specified in vars name
+  mysql_db:
+    name: "{{ mysql_db_user_database | mandatory }}"
+    state: present
+    login_user: "{{ mysql_db_user_name }}"
+    login_password: "{{ mysql_db_user_password }}"
+  become: yes
+  notify:
+    - mysql_db_user_database_fact
+  when:  ansible_local.mysql_db_user_database is undefined or not ansible_local.mysql_db_user_database.exist

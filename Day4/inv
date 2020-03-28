@@ -1,0 +1,28 @@
+# This is inventory file for homework 2
+[master]
+controller ansible_host=10.156.0.2
+
+[dbservers]
+ansible-node.europe-west4-a.c.vocal-door-268207.internal
+
+[webservers]
+ansible-nginx.europe-west4-a.c.vocal-door-268207.internal
+
+[appservers]
+ansible-app.europe-west4-a.c.vocal-door-268207.internal
+
+[ubuntu:children]
+dbservers
+webservers
+appservers
+
+[ubuntu:vars]
+ansible_user=ablinuxdevops
+ansible_ssh_private_key_file=/home/ablinuxdevops/.ssh/id_rsa
+
+
+[all:vars]
+# Sets the environment to all
+#export ANSIBLE_STDOUT_CALLBACK=yaml
+#export ansible_python_interpreter=auto
+#export ANSIBLE_VAULT_PASSWORD_FILE=./files/.ansible_vault

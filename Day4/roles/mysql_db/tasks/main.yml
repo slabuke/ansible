@@ -1,0 +1,39 @@
+---
+# tasks file for mysql_db
+
+- name: Copy MySQL conf file
+  template:
+    src: my.cnf
+    dest: "/etc/my.cnf"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+
+- name: Determine required MySQL Python libraries.
+  set_fact:
+    deb_mysql_python_package: 
+      "{% if 'python3' in ansible_python_interpreter|default('') %}python3-mysqldb{% else %}python-mysqldb{% endif %}"
+
+- name: Ensure MySQL Python libraries are installed.
+  apt: "name={{ deb_mysql_python_package }} state=present"
+  become: yes
+    
+- name: Install mysql-server
+  apt:
+    update_cache: yes
+    cache_valid_time: 36000
+    pkg:
+    - python3-pymysql
+    - libmysqlclient-dev
+    - mysql-server=5.7.29-0ubuntu0.18.04.1
+  become: yes
+  when: ansible_os_family == "Debian"  
+  
+- name: Start the MySQL service
+  service: 
+    name: mysql 
+    state: started
+    enabled: true
+  notify:
+  - mysql_db installed fact

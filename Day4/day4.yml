@@ -1,0 +1,102 @@
+---
+- name: All servers
+  hosts: ubuntu
+  gather_facts: yes        
+  roles:
+  - role: base
+
+- name: DB Tier
+  hosts: dbservers  
+  gather_facts: yes  
+  roles:
+  - role: mysql_db
+  - role: mysql_db_user
+    vars:
+      mysql_db_root_password:
+        !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65376334363938363466646338633566326333313465356430353338383565316565666262646165
+          3433366366396365633838646332383666396431346464300a646635396466376138653035633634
+          35656532636564656266343834626664653337623161346362353039653736323235386163303839
+          3239663366623237660a613832363934383933316261633265353232623463333866353366623432
+          63646234653265336437306235626531643536313164336164306633323834346461
+      mysql_db_user_name: 
+        abatura
+      mysql_db_user_password:
+        !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65663564316462623863386565393434316431323234656230643433323536666463363062323636
+          6565633364613036623232323864363930616663373861310a326465653164366232363531393330
+          65376430333538383866616132346633646432653335363966306431643430396430616330616639
+          6434343962666531340a316166323638373862646636306165386431373965333535646561353431
+          6230
+      mysql_db_user_database:
+        abatura_db  
+        
+  tasks:
+    - name: Check db server
+      command: 'netstat -tulpn | grep "3306"'
+      register: test
+      failed_when: not "mysqld" in test.stdout
+      changed_when: false
+      become: yes
+       
+- name: App Tier
+  hosts: appservers  
+  gather_facts: yes  
+  roles:
+  - role: user
+    vars:
+      user_name:
+        andrei_batura
+      user_group:
+        andrei_batura
+      user_privs:
+        'ALL=(ALL:ALL) NOPASSWD:ALL'   
+  - role: msg-service 
+    vars:
+      app_user: 
+        "{{ user_name }}"
+      app_group: 
+        "{{ user_group }}"
+      student_first_name: 
+        Andrei
+      student_last_name:
+        Batura
+      app_port:
+        8080
+  - role: mysql-check
+    vars:
+      mysql_check_port:
+        8000
+        
+# Sanity Tests: 
+
+  tasks:
+    - name: Check new services
+      command: 'netstat -tulpn | grep "{{ item.port }}"'
+      register: test
+      failed_when: not "{{ item.srv }}" in test.stdout
+      changed_when: false
+      with_items:
+      - { port: "{{ app_port }}", srv: msg-server }  
+      - { port: "{{ mysql_check_port }}", srv: mysql-check } 
+      become: yes
+
+- name: Web Tier
+  hosts: webservers  
+  gather_facts: yes  
+  roles:        
+  - role: nginx 
+  - role: web-service   
+    vars:
+      backend:
+       - context: msg-service
+         hostip: "{{ hostvars['ansible-app.europe-west4-a.c.vocal-door-268207.internal'].ansible_default_ipv4.address }}"
+         urn: "msg"
+         port: "8080"
+       - context: mysql-check
+         hostip: "{{ hostvars['ansible-app.europe-west4-a.c.vocal-door-268207.internal'].ansible_default_ipv4.address }}"
+         urn: "check"
+         port: "8000"  
+        

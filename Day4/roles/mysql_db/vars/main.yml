@@ -1,0 +1,11 @@
+---
+# vars file for mysql_db
+
+mysql_user:
+- user_db
+
+mysql_password:
+- pasSw0rd
+
+mysql_db_user_database:
+- user_db

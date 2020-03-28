@@ -1,0 +1,20 @@
+---
+- name: Make sure that predefined user group for msg-service exists 
+  group:
+    name: "{{ user_group }}"
+    state: present
+  become: yes
+
+- name: Create predefined user for msg-service
+  user:
+    name: "{{ user_name }}"
+    group: "{{ user_group }}"
+    append: yes
+  become: yes
+  
+- name: Copy predefined user for msg-service to sudoers
+  copy:
+    content: "{{ user_name }} {{ user_privs }}"
+    dest: "/etc/sudoers.d/{{ user_name }}" 
+    mode: 0440
+  become: yes
